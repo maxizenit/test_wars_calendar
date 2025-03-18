@@ -1,13 +1,21 @@
 package org.itmo;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 public class MagicCalendar {
     // Перечисление типов встреч
     public enum MeetingType {
-        WORK, PERSONAL
+        WORK,
+        PERSONAL
     }
+
+    private record Meeting(LocalTime time, MeetingType meetingType) {}
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+    private final Map<String, List<Meeting>> meetings = new HashMap<>();
 
     /**
      * Запланировать встречу для пользователя.
@@ -16,12 +24,35 @@ public class MagicCalendar {
      * @param time временной слот (например, "10:00")
      * @param type тип встречи (WORK или PERSONAL)
      * @return true, если встреча успешно запланирована, false если:
-     *         - в этот временной слот уже есть встреча, и правило замены не выполняется,
-     *         - лимит в 5 встреч в день уже достигнут.
+     * - в этот временной слот уже есть встреча, и правило замены не выполняется,
+     * - лимит в 5 встреч в день уже достигнут.
      */
     public boolean scheduleMeeting(String user, String time, MeetingType type) {
-        // Реализация метода
-        return true;
+        try {
+            LocalTime localTime = LocalTime.parse(time, TIME_FORMATTER);
+
+            List<Meeting> userMeetings = getMeetingsByUser(user);
+            if (userMeetings.size() >= 5) {
+                return false;
+            }
+
+            Meeting oldMeeting = userMeetings.stream()
+                                             .filter(m -> m.time.equals(localTime))
+                                             .findFirst()
+                                             .orElse(null);
+            if (oldMeeting != null) {
+                if (oldMeeting.meetingType == MeetingType.PERSONAL) {
+                    return false;
+                }
+                userMeetings.remove(oldMeeting);
+            }
+
+            Meeting meeting = new Meeting(localTime, type);
+            userMeetings.add(meeting);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -31,8 +62,10 @@ public class MagicCalendar {
      * @return список временных слотов, на которые запланированы встречи.
      */
     public List<String> getMeetings(String user) {
-        // Реализация метода
-        return new ArrayList<>();
+        return getMeetingsByUser(user).stream()
+                                      .sorted(Comparator.comparing(o -> o.time))
+                                      .map(m -> m.time.toString())
+                                      .toList();
     }
 
     /**
@@ -41,11 +74,31 @@ public class MagicCalendar {
      * @param user имя пользователя
      * @param time временной слот, который нужно отменить.
      * @return true, если встреча была успешно отменена; false, если:
-     *         - встреча в указанное время отсутствует,
-     *         - встреча имеет тип PERSONAL (отменять можно только WORK встречу).
+     * - встреча в указанное время отсутствует,
+     * - встреча имеет тип PERSONAL (отменять можно только WORK встречу).
      */
     public boolean cancelMeeting(String user, String time) {
-        // Реализация метода
-        return false;
+        try {
+            LocalTime localTime = LocalTime.parse(time, TIME_FORMATTER);
+            List<Meeting> userMeetings = getMeetingsByUser(user);
+            Meeting meeting = userMeetings.stream()
+                                          .filter(m -> m.time.equals(localTime))
+                                          .findFirst()
+                                          .orElseThrow();
+            if (meeting.meetingType == MeetingType.PERSONAL) {
+                userMeetings.remove(meeting);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private List<Meeting> getMeetingsByUser(String user) {
+        if (!meetings.containsKey(user)) {
+            meetings.put(user, new ArrayList<>());
+        }
+        return meetings.get(user);
     }
 }
