@@ -36,15 +36,21 @@ public class MagicCalendar {
                 return false;
             }
 
-            Meeting oldMeeting = userMeetings.stream()
-                                             .filter(m -> m.time.equals(localTime))
-                                             .findFirst()
-                                             .orElse(null);
-            if (oldMeeting != null) {
-                if (oldMeeting.meetingType == MeetingType.PERSONAL) {
+            List<Meeting> oldMeetings = userMeetings.stream()
+                                                    .filter(m -> {
+                                                        LocalTime start = localTime.minusHours(1);
+                                                        LocalTime end = localTime.plusHours(1);
+
+                                                        return m.time.equals(start) || m.time.equals(end) ||
+                                                                (m.time.isAfter(start) && m.time.isBefore(end));
+                                                    })
+                                                    .toList();
+            if (!oldMeetings.isEmpty()) {
+                if (oldMeetings.stream()
+                               .anyMatch(m -> m.meetingType == MeetingType.PERSONAL)) {
                     return false;
                 }
-                userMeetings.remove(oldMeeting);
+                userMeetings.removeAll(oldMeetings);
             }
 
             Meeting meeting = new Meeting(localTime, type);
