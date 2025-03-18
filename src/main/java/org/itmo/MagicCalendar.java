@@ -41,8 +41,7 @@ public class MagicCalendar {
                                                         LocalTime start = localTime.minusHours(1);
                                                         LocalTime end = localTime.plusHours(1);
 
-                                                        return m.time.equals(start) || m.time.equals(end) ||
-                                                                (m.time.isAfter(start) && m.time.isBefore(end));
+                                                        return m.time.isAfter(start) && m.time.isBefore(end);
                                                     })
                                                     .toList();
             if (!oldMeetings.isEmpty()) {
