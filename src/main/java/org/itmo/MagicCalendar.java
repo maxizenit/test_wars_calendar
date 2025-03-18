@@ -91,7 +91,7 @@ public class MagicCalendar {
                                           .filter(m -> m.time.equals(localTime))
                                           .findFirst()
                                           .orElseThrow();
-            if (meeting.meetingType == MeetingType.PERSONAL) {
+            if (meeting.meetingType == MeetingType.WORK) {
                 userMeetings.remove(meeting);
                 return true;
             }
